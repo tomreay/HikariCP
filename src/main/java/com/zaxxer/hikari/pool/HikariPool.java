@@ -343,6 +343,11 @@ public class HikariPool extends PoolBase implements HikariPoolMXBean, IBagStateL
       }
    }
 
+   @Override
+   public void reinitializeDataSource() {
+      initializeDataSource();
+   }
+
    /** {@inheritDoc} */
    @Override
    public final synchronized void suspendPool()

@@ -55,7 +55,7 @@ abstract class PoolBase
    private int defaultTransactionIsolation;
    private int transactionIsolation;
    private Executor netTimeoutExecutor;
-   private DataSource dataSource;
+   private AtomicReference<DataSource> dataSource;
 
    private final String catalog;
    private final boolean isReadOnly;
@@ -86,6 +86,7 @@ abstract class PoolBase
       this.connectionTimeout = config.getConnectionTimeout();
       this.validationTimeout = config.getValidationTimeout();
       this.lastConnectionFailure = new AtomicReference<>();
+      this.dataSource = new AtomicReference<>();
 
       initializeDataSource();
    }
@@ -160,7 +161,7 @@ abstract class PoolBase
 
    public DataSource getUnwrappedDataSource()
    {
-      return dataSource;
+      return dataSource.get();
    }
 
    // ***********************************************************************
@@ -279,7 +280,7 @@ abstract class PoolBase
     *
     * @return a DataSource instance
     */
-   private void initializeDataSource()
+   void initializeDataSource()
    {
       final String jdbcUrl = config.getJdbcUrl();
       final String username = config.getUsername();
@@ -302,7 +303,7 @@ abstract class PoolBase
          createNetworkTimeoutExecutor(dataSource, dsClassName, jdbcUrl);
       }
 
-      this.dataSource = dataSource;
+      this.dataSource.set(dataSource);
    }
 
    Connection newConnection() throws Exception
@@ -312,7 +313,7 @@ abstract class PoolBase
          String username = config.getUsername();
          String password = config.getPassword();
 
-         connection = (username == null) ? dataSource.getConnection() : dataSource.getConnection(username, password);
+         connection = (username == null) ? dataSource.get().getConnection() : dataSource.get().getConnection(username, password);
          setupConnection(connection);
          lastConnectionFailure.set(null);
          return connection;
